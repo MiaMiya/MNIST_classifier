@@ -1,33 +1,35 @@
 # -*- coding: utf-8 -*-
-import click
 import logging
 from pathlib import Path
+
+import click
+import matplotlib.pyplot as plt
+import torch
 from dotenv import find_dotenv, load_dotenv
-import torch 
 from torch import nn, optim
-from tqdm import tqdm
 from torch.utils.data import Dataset
-import matplotlib.pyplot as plt 
-from src.models.model import MyAwesomeModel
+from tqdm import tqdm
+
 from src.data.make_dataset import CorruptMnist
+from src.models.model import MyAwesomeModel
 
 
 @click.command()
-@click.option("--lr", default=1e-3, help='learning rate to use for training')
+@click.option("--lr", default=1e-3, help="learning rate to use for training")
 def train(lr):
     print("Training day and night")
     print(lr)
 
     model = MyAwesomeModel()
     model.train()
-    
+
     batch_size = 128
-    # load the training data 
+    # load the training data
     train = CorruptMnist(train=True, in_folder="data/raw", out_folder="data/processed")
     trainloader = torch.utils.data.DataLoader(train, batch_size=batch_size)
 
-    criterion = nn.CrossEntropyLoss() # define type of loss 
-    optimizer = optim.Adam(model.parameters(), lr=lr) # define optimizer
+    criterion = nn.CrossEntropyLoss()  # define type of loss
+    optimizer = optim.Adam(model.parameters(), lr=lr)  # define optimizer
 
     epochs = 5
 
@@ -35,54 +37,57 @@ def train(lr):
     train_accuracy = []
 
     for e in range(epochs):
-        accuracy = 0 
+        accuracy = 0
         with tqdm(trainloader, unit="batch") as tepoch:
             for images, labels in trainloader:
                 tepoch.set_description(f"Epoch {e}")
-                
-                # Clear gradients 
+
+                # Clear gradients
                 optimizer.zero_grad()
 
-                # Forward pass 
+                # Forward pass
                 outputs = model(images)
                 ps = torch.exp(outputs)
-                loss = criterion(ps, labels) # train loss 
+                loss = criterion(ps, labels)  # train loss
                 train_losses.append(loss.item())
 
                 _, top_class = ps.topk(1, dim=1)
                 equals = top_class == labels.view(*top_class.shape)
-                accuracy += torch.mean(equals.type(torch.FloatTensor))/len(trainloader)
+                accuracy += torch.mean(equals.type(torch.FloatTensor)) / len(
+                    trainloader
+                )
 
                 train_accuracy.append(accuracy)
 
-                # Backpropogate 
+                # Backpropogate
                 loss.backward()
 
-                # Update parameters 
+                # Update parameters
                 optimizer.step()
 
-                tepoch.set_postfix(loss=loss.item(), accuracy=accuracy.item()*100)
+                tepoch.set_postfix(loss=loss.item(), accuracy=accuracy.item() * 100)
 
     torch.save(model.state_dict(), "models/my_trained_model.pt")
 
     _, axis = plt.subplots(2)
-  
+
     # For loss
-    axis[0].plot(train_losses,label="loss")
+    axis[0].plot(train_losses, label="loss")
     axis[0].set_title("Training loss")
     axis[0].set_xlabel("iterations")
     axis[0].set_ylabel("loss")
-    
+
     # For accuracy
-    axis[1].plot(train_accuracy,label="accuracy")
+    axis[1].plot(train_accuracy, label="accuracy")
     axis[1].set_title("Training accuracy")
     axis[0].set_xlabel("iterations")
     axis[0].set_ylabel("loss")
 
     plt.savefig(f"reports/figures/training_curve.png")
 
-if __name__ == '__main__':
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+if __name__ == "__main__":
+    log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
     # not used in this stub but often useful for finding various files

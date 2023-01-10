@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import click
 import numpy as np
-import torch 
+import torch
+
 from src.models.model import MyAwesomeModel
 
 
@@ -33,5 +34,5 @@ def evaluate(model_checkpoint, data_to_predict):
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     evaluate()
